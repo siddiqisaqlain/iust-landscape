@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IUST Campus Garden</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="An interactive 3D landscape master plan for the IUST Awantipora campus.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the 3D site model fills the screen like a model on a table; the controls float on frosted panels at its edges. */
+:root{
+  --ink:#1d2620; --ink2:#55605a; --ink3:#8a948d;
+  --panel:rgba(250,248,242,.82); --panel-strong:rgba(250,248,242,.94); --rule:rgba(29,38,32,.12); --fill:rgba(29,38,32,.06);
+  --chinar:#b4462a; --water:#3f7896; --leaf:#3f6b4a; --stage:#dfe3dc;
+  --f-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-ui:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ink:#eef0ea; --ink2:#b3bbb3; --ink3:#7f8a82; --panel:rgba(24,29,26,.78); --panel-strong:rgba(24,29,26,.93); --rule:rgba(238,240,234,.14); --fill:rgba(238,240,234,.08);
+  --chinar:#e07a55; --water:#7fb6d4; --leaf:#8fc29c; --stage:#1a1f1c; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --ink:#eef0ea; --ink2:#b3bbb3; --ink3:#7f8a82; --panel:rgba(24,29,26,.78); --panel-strong:rgba(24,29,26,.93); --rule:rgba(238,240,234,.14); --fill:rgba(238,240,234,.08);
+  --chinar:#e07a55; --water:#7fb6d4; --leaf:#8fc29c; --stage:#1a1f1c; color-scheme:dark }
+html,body{height:100%}
+body{margin:0;overflow:hidden;background:var(--stage);color:var(--ink);font-family:var(--f-ui);font-size:15px;-webkit-font-smoothing:antialiased}
+#scene{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;outline:none}
+.glass{background:var(--panel);-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--rule);box-shadow:0 12px 40px -12px rgba(0,0,0,.25)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--chinar);outline-offset:2px}
+
+/* title + mode */
+.head{position:fixed;z-index:5;top:calc(16px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));width:300px;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.head small{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.head h1{font-family:var(--f-display);font-weight:500;font-size:30px;line-height:1.02;margin:2px 0 0;letter-spacing:-.01em;text-wrap:balance}
+.seg{display:flex;padding:3px;border-radius:999px;background:var(--fill);gap:2px}
+.seg button{flex:1;border:0;background:none;border-radius:999px;padding:7px 10px;font-size:13px;font-weight:600;color:var(--ink2)}
+.seg button[aria-pressed="true"]{background:var(--panel-strong);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+
+/* places */
+.places{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 360px);overflow:auto}
+.places button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:6px 6px;border-radius:10px;text-align:left;font-size:14px;font-weight:500}
+.places button:hover,.places button[aria-current="true"]{background:var(--fill)}
+.places b{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--chinar);color:#fff;font-size:11px;font-weight:700}
+.places .w b{background:var(--water)}
+
+/* bottom controls */
+.bar{position:fixed;z-index:5;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:14px;padding:8px 10px 8px 8px;border-radius:999px;max-width:calc(100% - 32px)}
+.bar .seg{background:var(--fill)}
+.bar .seg button{padding:8px 12px}
+.time{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.time input{width:160px;accent-color:var(--chinar)}
+.time output{width:44px;color:var(--ink)}
+.ibtn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;background:var(--ink);color:var(--stage);padding:9px 14px;font-size:13px;font-weight:600;white-space:nowrap}
+.ibtn.ghost{background:var(--fill);color:var(--ink)}
+.ibtn svg{width:14px;height:14px}
+
+/* place card */
+.card{position:fixed;z-index:6;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));width:340px;border-radius:18px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;
+  transform:translateX(calc(100% + 32px));transition:transform .5s var(--ease)}
+.card.on{transform:none}
+.card .k{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--chinar)}
+.card .x{border:0;background:var(--fill);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--ink2)}
+.card h2{font-family:var(--f-display);font-weight:500;font-size:30px;line-height:1.05;margin:0;text-wrap:balance}
+.card p{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink2)}
+.card .now{font-size:13px;color:var(--ink3);border-top:1px solid var(--rule);padding-top:10px}
+.card .facts{display:flex;flex-wrap:wrap;gap:6px}
+.card .facts span{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--fill);color:var(--ink2)}
+
+/* labels over the model */
+#labels{position:fixed;inset:0;pointer-events:none;z-index:3}
+.lab{position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;padding:3px 9px 3px 3px;border-radius:999px;border:0;font-size:12px;font-weight:600;white-space:nowrap;pointer-events:auto;
+  background:var(--panel-strong);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.2);transition:opacity .3s}
+.lab b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--chinar);color:#fff;font-size:11px}
+.lab.w b{background:var(--water)}
+.lab.dim{opacity:.35}
+.lab.hide{opacity:0;pointer-events:none}
+
+.hint{position:fixed;z-index:4;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--ink2);padding:6px 12px;border-radius:999px;transition:opacity .6s}
+.load{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:var(--stage);transition:opacity .8s,visibility .8s}
+.load.done{opacity:0;visibility:hidden}
+.load p{font-family:var(--f-display);font-size:22px;color:var(--ink2)}
+.compass{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
+.compass svg{width:26px;height:26px}
+
+@media (max-width:760px){
+  .head{width:auto;right:max(16px,env(safe-area-inset-right,0px));padding:12px 14px;gap:8px}
+  .head h1{font-size:22px}
+  .places{flex-direction:row;overflow-x:auto;max-height:none;gap:4px;scrollbar-width:none}
+  .places button{white-space:nowrap;padding:5px 8px;background:var(--fill)}
+  .bar{flex-wrap:wrap;justify-content:center;border-radius:20px;gap:8px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  .time input{width:110px}
+  .card{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;transform:translateY(calc(100% + 200px))}
+  .card.on{transform:none}
+  .hint,.compass{display:none}
+}
+@media (prefers-reduced-motion:reduce){.card,.load{transition:none}}
+</style>
+
+<canvas id="scene" tabindex="0" aria-label="3D model of the IUST Awantipora campus and its landscape design. Drag to turn, scroll or pinch to zoom, right-drag to pan."></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<header class="head glass">
+  <div><small>IUST Awantipora · landscape master plan</small><h1>A Campus Garden of the Karewa</h1></div>
+  <div class="seg" role="group" aria-label="Show the campus">
+    <button type="button" id="mExist" aria-pressed="false">Today</button>
+    <button type="button" id="mProp" aria-pressed="true">Proposed</button>
+  </div>
+  <ul class="places" id="places" aria-label="Places in the plan"></ul>
+</header>
+
+<aside class="card glass" id="card" aria-live="polite">
+  <div class="k"><span id="cK"></span><button class="x" type="button" id="cX" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.8"><path d="M1 1l8 8M9 1L1 9"/></svg></button></div>
+  <h2 id="cT"></h2>
+  <p id="cP"></p>
+  <div class="facts" id="cF"></div>
+  <p class="now" id="cN"></p>
+</aside>
+
+<div class="bar glass" role="group" aria-label="Season and time">
+  <div class="seg" id="seasons" role="group" aria-label="Season">
+    <button type="button" data-s="spring" aria-pressed="false">Spring</button>
+    <button type="button" data-s="summer" aria-pressed="false">Summer</button>
+    <button type="button" data-s="autumn" aria-pressed="true">Autumn</button>
+    <button type="button" data-s="winter" aria-pressed="false">Winter</button>
+  </div>
+  <label class="time" for="hour"><span>Time</span><input type="range" id="hour" min="5" max="21" step="0.05" value="16.5"><output id="hourOut">16:30</output></label>
+  <button class="ibtn ghost" type="button" id="live" aria-pressed="false"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg><span>Day cycle</span></button>
+  <button class="ibtn" type="button" id="tour"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg><span>Guided tour</span></button>
+</div>
+<p class="hint glass" id="hint">Drag to turn · scroll to zoom · right-drag to pan · click a place</p>
+<div class="compass glass" aria-hidden="true"><svg id="needle" viewBox="0 0 26 26"><path d="M13 2l4 11h-8z" fill="var(--chinar)"/><path d="M13 24l4-11h-8z" fill="var(--ink3)"/></svg></div>
+<div class="load" id="load"><p>Laying out the campus…</p></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+
+/* ---------- the site, in metres ----------
+   Traced from satellite imagery at 0.68 m per traced pixel; x runs east, z runs south, origin near the campus centre.
+   The ground rises east toward the Wastarwan hills. */
+const PX = 0.68, toM = (px, py) => [(px - 720) * PX, (py - 406) * PX];
+const W = 1600, D = 1200;                       // the modelled ground, metres
+function H(x, z){
+  let h = 0.045 * (x + 490) + Math.sin(x * 0.021) * 1.1 + Math.cos(z * 0.027 + x * 0.004) * 1.3;
+  if (x > 430) { const d = x - 430; h += d * d * 0.0018 + Math.sin(z * 0.03) * d * 0.04; }
+  if (x < -300) h -= (-300 - x) * 0.03;          // the town falls toward the Jhelum
+  return h;
+}
+const seeded = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
+const rnd = seeded(7);
+
+const highwayPx = [[612,-480],[590,0],[555,110],[520,180],[470,270],[400,380],[320,490],[250,600],[205,700],[180,812],[140,1290]];
+function bez(p0, c1, c2, p1, n){ const o = []; for (let i = 0; i <= n; i++){ const t = i / n, u = 1 - t;
+  o.push([u*u*u*p0[0] + 3*u*u*t*c1[0] + 3*u*t*t*c2[0] + t*t*t*p1[0], u*u*u*p0[1] + 3*u*u*t*c1[1] + 3*u*t*t*c2[1] + t*t*t*p1[1]]); } return o; }
+const loopPx = [].concat(bez([640,178],[580,200],[540,250],[525,300],10), bez([525,300],[515,350],[545,410],[600,460],10).slice(1),
+  bez([600,460],[650,505],[700,560],[780,568],10).slice(1), bez([780,568],[860,575],[930,555],[980,510],10).slice(1), bez([980,510],[1015,480],[1035,440],[1040,395],8).slice(1));
+const eastRoadPx = bez([1040,395],[1150,375],[1250,370],[1440,360],12).concat([[1900,350]]);
+const entryPx = [[525,198],[600,185],[650,172],[760,158],[885,138]];
+const swRoadPx = bez([600,460],[540,500],[450,560],[350,640],10);
+const trackPx = bez([1225,375],[1255,300],[1290,200],[1330,0],10).concat([[1360,-300]]);
+const oldPathsPx = [[[862,372],[858,560]], [[862,380],[1030,392]], [[700,270],[860,372]], [[760,520],[860,520]]];
+const spinePx = [[[752,170],[762,250],[862,372],[860,560],[852,700]], [[760,520],[660,524],[540,600]], [[862,380],[1040,395]]];
+const rillPx = bez([668,300],[620,330],[560,380],[500,430],14);
+const riverPx = [[-330,-480],[-250,0],[-180,400],[-260,800],[-380,1290]];
+const toMs = a => a.map(p => toM(p[0], p[1]));
+
+// buildings: [px, py, w, h, storeys height m]
+const B = [
+  [575,250,60,95,14],[612,358,52,58,13],[650,440,120,62,15],[705,345,62,45,12],[788,368,52,48,12],[775,440,66,72,14],
+  [890,418,70,66,14],[955,305,72,78,15],[1005,252,56,56,12],[685,195,40,40,9],[745,185,60,45,10],[760,240,40,70,11],
+  [820,215,30,95,10],[840,165,45,45,10],[852,232,48,82,12],
+  [415,425,72,66,16],[520,475,58,44,12],[395,510,108,64,16],[305,545,72,82,16],[392,578,118,58,16],[568,596,62,112,15],
+  [445,688,82,28,9],[612,512,30,40,8],[895,557,52,30,8],[950,522,72,42,9],[740,580,40,35,7],[655,98,40,30,7],[900,185,65,95,12]
+];
+const LIB = [752,128];
+
+/* ---------- the nine places ---------- */
+const PLACES = [
+  { id:'gate', k:'A', name:'Chinar Gate', px:[590,190], d:120,
+    text:'A shaded arrival plaza off NH44. Buses and cars pull into a bay on the entry road; people step straight into a square grove of chinars around a shallow pool.',
+    facts:['Grove of 12 chinars','Bus and drop-off bay','Pool at the centre'],
+    today:'Today: one busy junction where buses, cars and walkers mix.' },
+  { id:'library', k:'B', name:'Library Garden', px:[752,128], d:150,
+    text:'A low-walled four-part garden that finally gives the octagonal Rumi Library a setting, with Indian horse chestnuts along its walls and benches for reading outdoors.',
+    facts:['Frames the landmark','Outdoor reading','Horse chestnut avenue'],
+    today:'Today: the library sits among parking and leftover ground.' },
+  { id:'khayaban', k:'C', name:'The Khayaban', px:[860,430], d:230,
+    text:'A tree-lined walking spine, about 400 m long, from the gate and library through the car-free core to the hostels and the meadow. A stone rill runs beside it and lamps light it at night.',
+    facts:['About 400 m','Double row of chinars','Car-free inside the loop'],
+    today:'Today: walks follow the roads, with little shade and nowhere to sit.' },
+  { id:'bagh', k:'D', name:'Central Bagh', px:[713,300], d:130,
+    text:'A four-part garden in the Mughal tradition at the heart of the campus. Two rills divide it and meet at a raised platform and pool, which grows out of the existing round garden.',
+    facts:['About 60 × 60 m','Four quarters, two rills','Terraces step west'],
+    today:'Today: a small round garden, the only designed space in the core.' },
+  { id:'karewa', k:'E', name:'Karewa Terraces', px:[1260,300], d:330,
+    text:'The eastern slopes stay a working landscape: almond orchards on repaired terraces, saffron beds that flower in late October, contour paths and outdoor classrooms facing the hills.',
+    facts:['Almond blossom in March','Saffron in Oct–Nov','Outdoor classrooms'],
+    today:'Today: orchards and terraced fields treated as spare land.' },
+  { id:'woodland', k:'F', name:'Highway Woodland', px:[440,370], d:300,
+    text:'The existing belt of trees along NH44, thickened with deodar and blue pine into an evergreen woodland that screens noise and dust all year.',
+    facts:['Evergreen screen','Keeps every existing tree','Noise and dust buffer'],
+    today:'Today: a thin strip of mature trees, the campus’s best green asset.' },
+  { id:'hostels', k:'G', name:'Hostel Gardens', px:[440,560], d:220,
+    text:'Courtyards, kitchen gardens and walnut and fruit trees around the hostels, so students have green space where they live as well as where they study.',
+    facts:['Kitchen gardens','Walnut and fruit trees','Sunny courtyards'],
+    today:'Today: hostels sit along service roads with bare ground between.' },
+  { id:'rain', k:'H', name:'Rain Garden', px:[478,440], d:120, water:true,
+    text:'Where the water line ends. Rain and snowmelt from roofs and roads run through the rills and the bagh to a willow-fringed pond on the low west edge, and are pumped back to water the gardens.',
+    facts:['About 600 m³ a year per 1,000 m² of roof','Willows and reeds','Stores water for summer'],
+    today:'Today: water runs off the slope and is lost.' },
+  { id:'meadow', k:'I', name:'Chinar Meadow', px:[910,704], d:230,
+    text:'An open lawn ringed by chinars for sports, events and convocation, with a running track and room for the whole university to gather.',
+    facts:['Running track','Events and sport','Ringed by chinars'],
+    today:'Today: open fields south of the loop road.' }
+];
+
+/* ---------- renderer, scene, camera ---------- */
+const canvas = $('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xdfe6ea, 900, 2200);
+const camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
+camera.position.set(-430, 360, 560);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(40, 20, 0); controls.enableDamping = true; controls.dampingFactor = .08;
+controls.maxPolarAngle = 1.42; controls.minDistance = 25; controls.maxDistance = 1600; controls.screenSpacePanning = false;
+
+const hemi = new THREE.HemisphereLight(0xf2f0e6, 0x5a6b4e, .7); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.1); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); const sc = sun.shadow.camera; sc.left = -650; sc.right = 650; sc.top = 650; sc.bottom = -650; sc.near = 10; sc.far = 3000;
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.6; scene.add(sun, sun.target);
+const moon = new THREE.DirectionalLight(0x9fb4d8, 0); moon.position.set(-300, 500, -200); scene.add(moon);
+
+/* ---------- ground: terrain with the plan painted on it ---------- */
+const TW = 2048, TH = 1536, tex = document.createElement('canvas'); tex.width = TW; tex.height = TH;
+const g = tex.getContext('2d');
+const cx = x => (x + W / 2) / W * TW, cz = z => (z + D / 2) / D * TH, ms = m => m * TW / W;
+const P = (px, py) => { const [x, z] = toM(px, py); return [cx(x), cz(z)]; };
+function line(pts, wM, color, dash){ g.save(); g.strokeStyle = color; g.lineWidth = ms(wM); g.lineCap = 'round'; g.lineJoin = 'round'; if (dash) g.setLineDash(dash.map(ms));
+  g.beginPath(); pts.forEach((p, i) => { const q = P(p[0], p[1]); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.stroke(); g.restore(); }
+function rectPx(px, py, w, h, color){ const a = P(px, py), b = P(px + w, py + h); g.fillStyle = color; g.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); }
+function ellPx(px, py, rx, ry, color, stroke){ const c = P(px, py); g.beginPath(); g.ellipse(c[0], c[1], ms(rx * PX), ms(ry * PX), 0, 0, Math.PI * 2);
+  if (stroke) { g.strokeStyle = color; g.lineWidth = ms(stroke); g.stroke(); } else { g.fillStyle = color; g.fill(); } }
+function polyPx(pts, color){ g.beginPath(); pts.forEach((p, i) => { const q = P(p[0], p[1]); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath(); g.fillStyle = color; g.fill(); }
+const hwX = py => { for (let i = 1; i < highwayPx.length; i++){ const a = highwayPx[i-1], b = highwayPx[i]; if (py <= b[1]) return a[0] + (b[0] - a[0]) * (py - a[1]) / (b[1] - a[1]); } return 140; };
+
+const GROUND = {
+  spring:{ land:'#c9d6a6', field:'#bccb8c', field2:'#d5dcae', hill:'#b7a77d', road:'#ece8de', pave:'#dccbb0', lawn:'#9fbf73', bed:'#e58aa0', saffron:'#9db57a', snow:0 },
+  summer:{ land:'#b8c98f', field:'#a9bd78', field2:'#cfd39a', hill:'#b29e70', road:'#ebe6da', pave:'#dccbb0', lawn:'#8fb562', bed:'#d9a54a', saffron:'#93ab70', snow:0 },
+  autumn:{ land:'#bdbb8a', field:'#c2ad78', field2:'#cfc89b', hill:'#b0915f', road:'#ece6d8', pave:'#d9c6aa', lawn:'#a9b36c', bed:'#c2632f', saffron:'#8b67b3', snow:0 },
+  winter:{ land:'#eef1f3', field:'#e7ebee', field2:'#f2f4f5', hill:'#e3e6e8', road:'#c9cccf', pave:'#d7d6d2', lawn:'#eef1f3', bed:'#e6e9eb', saffron:'#e7ebee', snow:1 }
+};
+let season = 'autumn', proposed = true;
+function paint(){
+  const c = GROUND[season];
+  g.fillStyle = c.land; g.fillRect(0, 0, TW, TH);
+  // fields and orchards around the campus
+  const r = seeded(11);
+  for (let i = 0; i < 260; i++){
+    const px = -460 + r() * 2400, py = -480 + r() * 1760, w = 40 + r() * 120, h = 30 + r() * 90;
+    if (px > 470 && px < 1080 && py > 60 && py < 720) continue;           // keep the campus core clear
+    if (px + w > hwX(py) - 30 && px < hwX(py) + 30) continue;
+    rectPx(px, py, w, h, r() < .5 ? c.field : c.field2);
+  }
+  // the hills to the east
+  const hx = cx(430 + 40); const grd = g.createLinearGradient(hx, 0, TW, 0); grd.addColorStop(0, c.land); grd.addColorStop(.25, c.hill); grd.addColorStop(1, c.hill);
+  g.fillStyle = grd; g.fillRect(hx, 0, TW - hx, TH);
+  // the Jhelum
+  line(riverPx, 70, season === 'winter' ? '#b9cbd6' : '#7ea3b5');
+  // roads
+  line(highwayPx, 22, c.road); line(highwayPx, .5, '#ffffff', [6, 6]);
+  [loopPx, eastRoadPx, entryPx, swRoadPx, trackPx].forEach(p => line(p, 8, c.road));
+  // solar field
+  rectPx(680, 578, 52, 48, '#3c4c63');
+  if (!proposed){
+    oldPathsPx.forEach(p => line(p, 3.2, '#d6a898'));
+    ellPx(713, 300, 26, 26, c.lawn); line([[687,300],[739,300]], 2, c.pave); line([[713,274],[713,326]], 2, c.pave);
+    rectPx(500, 398, 46, 52, '#c98f6e');                                     // court
+    return;
+  }
+  // proposed
+  ellPx(470, 380, 110, 150, c.snow ? c.land : '#a6b884');                    // woodland floor
+  for (const [x, y, rx, ry] of [[455,545,130,70],[350,620,70,60],[560,680,60,60]]) ellPx(x, y, rx, ry, c.lawn);
+  rectPx(720, 618, 380, 172, c.lawn); ellPx(910, 704, 120, 52, c.road, 4);    // meadow and track
+  // terraces and saffron beds on the karewa
+  for (let k = 0; k < 7; k++){ const y0 = 60 + k * 95; line([[1080, y0],[1200, y0 - 18],[1320, y0 - 10],[1440, y0 - 30],[1600, y0 - 40]], 2.2, '#b58f4e'); }
+  for (let k = 0; k < 6; k++) rectPx(1100 + (k % 3) * 70, 470 + Math.floor(k / 3) * 34, 55, 14, c.saffron);
+  // the spine, gardens and plazas
+  spinePx.forEach((p, i) => line(p, i ? 5 : 6.5, c.pave));
+  ellPx(590, 190, 44, 44, c.pave);
+  rectPx(692, 68, 120, 120, c.lawn); line([[752,68],[752,188]], 3, c.pave); line([[692,128],[812,128]], 3, c.pave);
+  rectPx(668, 255, 90, 90, c.lawn);
+  for (const [x, y] of [[673,260],[718,260],[673,305],[718,305]]) rectPx(x + 6, y + 6, 26, 26, c.bed);
+  line(loopPx.map(p => [p[0] + 12, p[1] - 9]), 2.4, season === 'winter' ? '#b7c6cf' : '#7fa2a0', [4, 3]);   // swale
+}
+paint();
+const groundTex = new THREE.CanvasTexture(tex); groundTex.anisotropy = renderer.capabilities.getMaxAnisotropy(); groundTex.encoding = THREE.sRGBEncoding;
+const tg = new THREE.PlaneGeometry(W, D, 320, 240); tg.rotateX(-Math.PI / 2);
+{ const p = tg.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, H(p.getX(i), p.getZ(i))); tg.computeVertexNormals(); }
+const ground = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ map: groundTex, roughness: 1 })); ground.receiveShadow = true; scene.add(ground);
+// a skirt under the edge, so the model reads as a cut block of land
+{ const skirt = new THREE.Mesh(new THREE.BoxGeometry(W, 40, D), new THREE.MeshStandardMaterial({ color: 0x8c7b62, roughness: 1 }));
+  skirt.position.y = -22; scene.add(skirt); }
+
+/* ---------- buildings ---------- */
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xf1eee7, roughness: .9 });
+const roofMat = new THREE.MeshStandardMaterial({ color: 0x5f8f80, roughness: .7 });
+const campus = new THREE.Group(); scene.add(campus);
+for (const [px, py, w, h, ht] of B){
+  const [x, z] = toM(px + w / 2, py + h / 2), y = H(x, z);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w * PX, ht, h * PX), [wallMat, wallMat, roofMat, wallMat, wallMat, wallMat]);
+  m.position.set(x, y + ht / 2 - 1.5, z); m.castShadow = m.receiveShadow = true; campus.add(m);
+}
+{ const [x, z] = toM(LIB[0], LIB[1]), y = H(x, z);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(22, 22, 13, 8), wallMat); body.position.set(x, y + 5, z); body.rotation.y = Math.PI / 8;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(25, 9, 8), roofMat); roof.position.set(x, y + 16, z); roof.rotation.y = Math.PI / 8;
+  [body, roof].forEach(m => { m.castShadow = m.receiveShadow = true; campus.add(m); }); }
+
+// the town to the west and a few farmhouses: walls and coloured tin roofs
+{ const houses = [], r = seeded(23);
+  for (let i = 0; i < 2600 && houses.length < 620; i++){
+    const py = -470 + r() * 1750, px = -450 + r() * (hwX(py) + 420);
+    if (px > hwX(py) - 26) continue;
+    houses.push([px, py, 9 + r() * 7, 8 + r() * 6, 5 + r() * 4, r()]);
+  }
+  for (let i = 0; i < 70; i++){ const px = 1100 + r() * 700, py = -400 + r() * 1600; if (py > 0 && py < 760 && px < 1440) continue; houses.push([px, py, 9 + r() * 5, 8 + r() * 5, 5 + r() * 3, r()]); }
+  const wg = new THREE.BoxGeometry(1, 1, 1), walls = new THREE.InstancedMesh(wg, new THREE.MeshStandardMaterial({ color: 0xe9e3d6, roughness: 1 }), houses.length);
+  const roofs = new THREE.InstancedMesh(wg, new THREE.MeshStandardMaterial({ roughness: .8 }), houses.length);
+  const roofCols = ['#7a2f2a', '#3f6f5c', '#4a5f7d', '#8c8c8c', '#a3462f', '#5d7d4e'].map(c => new THREE.Color(c));
+  const o = new THREE.Object3D();
+  houses.forEach((h, i) => {
+    const [x, z] = toM(h[0], h[1]), y = H(x, z), rot = h[5] * Math.PI;
+    o.position.set(x, y + h[4] / 2 - .5, z); o.rotation.set(0, rot, 0); o.scale.set(h[2], h[4], h[3]); o.updateMatrix(); walls.setMatrixAt(i, o.matrix);
+    o.position.y = y + h[4] + .3; o.scale.set(h[2] + 1, .8, h[3] + 1); o.updateMatrix(); roofs.setMatrixAt(i, o.matrix);
+    roofs.setColorAt(i, roofCols[Math.floor(h[5] * 997) % roofCols.length]);
+  });
+  walls.castShadow = roofs.castShadow = true; walls.receiveShadow = true; scene.add(walls, roofs);
+  window.__roofs = roofs; window.__roofCols = houses.map((h, i) => roofCols[Math.floor(h[5] * 997) % roofCols.length]); }
+
+/* ---------- water: rills, pools, pond and river, flowing ---------- */
+const flow = document.createElement('canvas'); flow.width = 64; flow.height = 256;
+{ const f = flow.getContext('2d'); f.fillStyle = '#4c88a6'; f.fillRect(0, 0, 64, 256);
+  for (let i = 0; i < 26; i++){ f.fillStyle = `rgba(220,240,250,${.18 + (i % 3) * .1})`; f.fillRect(Math.random() * 54, i * 10, 6 + Math.random() * 14, 2); } }
+const flowTex = new THREE.CanvasTexture(flow); flowTex.wrapS = flowTex.wrapT = THREE.RepeatWrapping; flowTex.encoding = THREE.sRGBEncoding;
+const waterMat = new THREE.MeshStandardMaterial({ map: flowTex, roughness: .15, metalness: .1, transparent: true, opacity: .92, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+const stillMat = new THREE.MeshStandardMaterial({ color: 0x4f86a2, roughness: .1, metalness: .15, transparent: true, opacity: .9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+function ribbon(pts, w, off, mat){
+  const pos = [], uv = [], idx = []; let L = 0;
+  for (let i = 0; i < pts.length; i++){
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    if (i) L += Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]);
+    for (const s of [1, -1]){ const x = pts[i][0] - dz * w / 2 * s, z = pts[i][1] + dx * w / 2 * s; pos.push(x, H(x, z) + off, z); uv.push(s > 0 ? 0 : 1, L / (w * 4)); }
+    if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); }
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx); geo.computeVertexNormals(); const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; return m;
+}
+function densify(pts, step){ const o = [pts[0]]; for (let i = 1; i < pts.length; i++){ const a = pts[i-1], b = pts[i], n = Math.max(1, Math.ceil(Math.hypot(b[0]-a[0], b[1]-a[1]) / step));
+  for (let k = 1; k <= n; k++) o.push([a[0] + (b[0]-a[0]) * k / n, a[1] + (b[1]-a[1]) * k / n]); } return o; }
+function disc(px, py, rx, rz, mat, off){
+  const gm = new THREE.CircleGeometry(1, 40); gm.rotateX(-Math.PI / 2); const [x0, z0] = toM(px, py); const p = gm.attributes.position;
+  for (let i = 0; i < p.count; i++){ const x = x0 + p.getX(i) * rx, z = z0 + p.getZ(i) * rz; p.setXYZ(i, x, H(x, z) + off, z); }
+  gm.computeVertexNormals(); const m = new THREE.Mesh(gm, mat); m.receiveShadow = true; return m;
+}
+const prop = new THREE.Group(), exist = new THREE.Group(); scene.add(prop, exist);
+scene.add(ribbon(densify(toMs(riverPx), 20), 46, .6, waterMat));
+prop.add(ribbon(densify(toMs(rillPx), 4), 1.4, .45, waterMat));
+prop.add(ribbon(densify(toMs([[862,372],[860,560]]), 4), 1.2, .45, waterMat));
+{ const [bx, bz] = toM(713, 300), s = 90 * PX / 2;
+  prop.add(ribbon(densify([[bx - s, bz],[bx + s, bz]], 3), 2.2, .5, waterMat), ribbon(densify([[bx, bz - s],[bx, bz + s]], 3), 2.2, .5, waterMat)); }
+prop.add(disc(478, 440, 30, 19, stillMat, .6), disc(590, 190, 6, 6, stillMat, .6));
+const plinth = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 1, 24), new THREE.MeshStandardMaterial({ color: 0xd9ccb5, roughness: .9 }));
+{ const [x, z] = toM(713, 300), y = H(x, z); plinth.position.set(x, y + .2, z); plinth.receiveShadow = true; prop.add(plinth);
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(7, 32), stillMat); pool.rotation.x = -Math.PI / 2; pool.position.set(x, y + .75, z); prop.add(pool); }
+
+/* ---------- trees: instanced by species, coloured by season, moving in the wind ---------- */
+const U = { time: { value: 0 } };
+function swaying(mat, amount){
+  mat.onBeforeCompile = s => {
+    s.uniforms.uTime = U.time;
+    s.vertexShader = 'uniform float uTime;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      #ifdef USE_INSTANCING
+        float ph = instanceMatrix[3].x * .07 + instanceMatrix[3].z * .05;
+        float k = max(position.y + .6, 0.) * ${amount.toFixed(3)};
+        transformed.x += sin(uTime * 1.4 + ph) * k;
+        transformed.z += cos(uTime * 1.1 + ph * 1.3) * k * .7;
+      #endif`);
+  };
+  return mat;
+}
+const SPECIES = {
+  chinar:  { geo: new THREE.IcosahedronGeometry(1, 1), r: 7.5, sy: .85, trunk: 5.5, cols: { spring:['#8db35f','#9cc06a'], summer:['#4c7b40','#5a8a49'], autumn:['#c4522a','#d98a2c','#b23f26','#e0a23a'], winter:['#8f8174','#9a8c7f'] }, bare: .55 },
+  deodar:  { geo: new THREE.ConeGeometry(1, 2.6, 7), r: 4.2, sy: 1, trunk: 2, cols: { spring:['#3c5e46'], summer:['#355841'], autumn:['#3a5a43'], winter:['#4b6a58'] } },
+  pine:    { geo: new THREE.ConeGeometry(1, 2.2, 7), r: 3.6, sy: 1, trunk: 3, cols: { spring:['#4f6f4c'], summer:['#486a46'], autumn:['#4c6b48'], winter:['#5c7a63'] } },
+  almond:  { geo: new THREE.IcosahedronGeometry(1, 1), r: 2.8, sy: .8, trunk: 1.8, cols: { spring:['#f3d1db','#f7e3e9','#eebfcd'], summer:['#7b9c57'], autumn:['#c8a24a','#b88d3a'], winter:['#8a7c70'] }, bare: .6 },
+  fruit:   { geo: new THREE.IcosahedronGeometry(1, 1), r: 4, sy: .85, trunk: 2.4, cols: { spring:['#a9c97c','#f1e6d6'], summer:['#5f8a49'], autumn:['#c99a3d','#a8742e'], winter:['#8d7f72'] }, bare: .6 },
+  chestnut:{ geo: new THREE.IcosahedronGeometry(1, 1), r: 5.5, sy: .95, trunk: 4, cols: { spring:['#7ea85a','#e9e2d0'], summer:['#4d7a42'], autumn:['#b5762e','#c98e3a'], winter:['#8c7e72'] }, bare: .55 },
+  willow:  { geo: new THREE.IcosahedronGeometry(1, 1), r: 5, sy: 1.1, trunk: 3, cols: { spring:['#b5cf7d'], summer:['#9ab86a'], autumn:['#d1c062'], winter:['#a59a7c'] }, bare: .6 },
+  tree:    { geo: new THREE.IcosahedronGeometry(1, 1), r: 5.5, sy: .9, trunk: 3.5, cols: { spring:['#86ab5c'], summer:['#5b8648'], autumn:['#b98a3a','#a9713a'], winter:['#8c7e72'] }, bare: .6 }
+};
+const plantings = { both: {}, prop: {} };
+const add = (set, sp, x, z, s) => (plantings[set][sp] = plantings[set][sp] || []).push([x, z, s || (0.8 + rnd() * .45)]);
+const nearLine = (x, z, pts, d) => { for (let i = 1; i < pts.length; i++){ const a = pts[i-1], b = pts[i], vx = b[0]-a[0], vz = b[1]-a[1], l2 = vx*vx + vz*vz;
+  const t = Math.max(0, Math.min(1, ((x-a[0])*vx + (z-a[1])*vz) / l2)); if (Math.hypot(x - a[0] - t*vx, z - a[1] - t*vz) < d) return true; } return false; };
+const inBuilding = (x, z, pad) => B.some(([px, py, w, h]) => { const [x0, z0] = toM(px, py), [x1, z1] = toM(px + w, py + h); return x > x0 - pad && x < x1 + pad && z > z0 - pad && z < z1 + pad; });
+const HWm = toMs(highwayPx), LOOPm = toMs(loopPx), ROADSm = [toMs(eastRoadPx), toMs(entryPx), toMs(swRoadPx), toMs(trackPx)];
+const clear = (x, z, d) => !nearLine(x, z, HWm, 16 + d) && !nearLine(x, z, LOOPm, 6 + d) && !ROADSm.some(r => nearLine(x, z, r, 6 + d)) && !inBuilding(x, z, 3 + d);
+
+// existing: the tree belt, scattered trees, and the orchards already on the karewa
+[[470,250],[492,280],[462,305],[500,318],[476,345],[452,372],[490,380],[430,400],[470,410],[510,300],[520,345],[385,470],[355,500],[330,530],[300,610],[270,650],
+ [660,680],[700,700],[740,690],[620,730],[560,760],[975,470],[1000,560],[870,300],[640,230]].forEach(([px, py]) => { const [x, z] = toM(px, py);
+  for (let k = 0; k < 3; k++){ const xx = x + (rnd() - .5) * 14, zz = z + (rnd() - .5) * 14; if (clear(xx, zz, 0)) add('both', 'tree', xx, zz, 1 + rnd() * .4); } });
+for (let px = 1068; px < 1255; px += 15) for (let py = 48; py < 205; py += 15){ const [x, z] = toM(px, py); add('both', 'almond', x + (rnd() - .5) * 2, z + (rnd() - .5) * 2, .9 + rnd() * .3); }
+for (let i = 0; i < 900; i++){ const px = -440 + rnd() * 2300, py = -460 + rnd() * 1720; const [x, z] = toM(px, py);
+  if (px > 470 && px < 1100 && py > 40 && py < 760) continue; if (x > 560) continue; if (!clear(x, z, 2)) continue; add('both', rnd() < .5 ? 'fruit' : 'tree', x, z); }
+
+// proposed
+spinePx.forEach((line, li) => { const pts = densify(toMs(line), 10);
+  pts.forEach((p, i) => { if (i === 0) return; const a = pts[i-1]; let dx = p[0]-a[0], dz = p[1]-a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    for (const s of [1, -1]){ const x = p[0] - dz * 6 * s, z = p[1] + dx * 6 * s; if (!inBuilding(x, z, 1)) add('prop', 'chinar', x, z, li ? .6 : .72); } }); });
+{ const [x0, z0] = toM(590, 190); for (let i = 0; i < 12; i++){ const a = i / 12 * Math.PI * 2; add('prop', 'chinar', x0 + Math.cos(a) * 22, z0 + Math.sin(a) * 22, .8); } }
+{ const [x0, z0] = toM(692, 68), s = 120 * PX;
+  [[0,0],[s,0],[0,s],[s,s]].forEach(([a, b]) => add('prop', 'chinar', x0 + a, z0 + b, .85));
+  for (let k = 1; k < 6; k++){ add('prop', 'chestnut', x0 + s * k / 6, z0 + 3, .8); add('prop', 'chestnut', x0 + s * k / 6, z0 + s - 3, .8); } }
+{ const [x0, z0] = toM(668, 255), s = 90 * PX;
+  [[0,0],[s,0],[0,s],[s,s]].forEach(([a, b]) => add('prop', 'chinar', x0 + a, z0 + b, .95));
+  for (const [qa, qb] of [[0,0],[1,0],[0,1],[1,1]]) for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++)
+    add('prop', qa === qb ? 'almond' : 'fruit', x0 + 8 + qa * s / 2 + i * 13, z0 + 8 + qb * s / 2 + j * 13, .8); }
+for (let i = 0; i < 520; i++){ const pts = [[600,0],[640,0],[600,120],[560,200],[590,240],[545,300],[560,420],[520,470],[430,520],[350,620],[300,700],[270,812],[160,812],[190,700],[235,600],[300,490],[380,380],[450,270],[500,180],[540,100]];
+  const px = 150 + rnd() * 500, py = rnd() * 812; let inside = false; for (let a = 0, b = pts.length - 1; a < pts.length; b = a++){ const [xa, ya] = pts[a], [xb, yb] = pts[b];
+    if ((ya > py) !== (yb > py) && px < (xb - xa) * (py - ya) / (yb - ya) + xa) inside = !inside; }
+  if (!inside) continue; const [x, z] = toM(px, py); if (clear(x, z, 1)) add('prop', rnd() < .55 ? 'deodar' : 'pine', x, z, .9 + rnd() * .5); }
+for (const [px, py, rx, ry, n] of [[455,545,130,70,26],[350,620,70,60,10],[560,680,60,60,9]])
+  for (let i = 0; i < n; i++){ const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()); const [x, z] = toM(px + Math.cos(a) * rx * r, py + Math.sin(a) * ry * r); if (clear(x, z, 0)) add('prop', rnd() < .4 ? 'fruit' : 'fruit', x, z); }
+{ const [x0, z0] = toM(478, 440); for (let i = 0; i < 11; i++){ const a = i / 11 * Math.PI * 2 + .3; add('prop', 'willow', x0 + Math.cos(a) * 27, z0 + Math.sin(a) * 18, .8 + rnd() * .3); } }
+{ const [x0, z0] = toM(720, 618), w = 380 * PX, h = 172 * PX;
+  for (let k = 0; k <= 10; k++){ add('prop', 'chinar', x0 + w * k / 10, z0 - 4, .9); add('prop', 'chinar', x0 + w * k / 10, z0 + h + 4, .9); }
+  for (let k = 1; k < 4; k++){ add('prop', 'chinar', x0 - 4, z0 + h * k / 4, .9); add('prop', 'chinar', x0 + w + 4, z0 + h * k / 4, .9); } }
+for (let px = 1085; px < 1435; px += 17) for (let py = 40; py < 700; py += 17){ if (px < 1255 && py < 210) continue; if (py > 460 && py < 520 && px < 1320) continue;
+  const [x, z] = toM(px + (rnd() - .5) * 3, py + (rnd() - .5) * 3); if (clear(x, z, 0)) add('prop', 'almond', x, z, .85 + rnd() * .3); }
+
+// build the instanced meshes; 'both' plants show in either view
+const forests = [];
+function grow(group, list){
+  for (const sp in list){
+    const S = SPECIES[sp], items = list[sp], n = items.length;
+    const canopy = new THREE.InstancedMesh(S.geo, swaying(new THREE.MeshStandardMaterial({ roughness: .85, flatShading: true }), sp === 'deodar' || sp === 'pine' ? .05 : .12), n);
+    const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(.18, .28, 1, 5), new THREE.MeshStandardMaterial({ color: 0x5b4a3b, roughness: 1 }), n);
+    canopy.castShadow = true; canopy.receiveShadow = true; trunk.castShadow = true;
+    group.add(canopy, trunk); forests.push({ sp, items, canopy, trunk, seed: items.map(() => rnd()) });
+  }
+}
+grow(scene, plantings.both); grow(prop, plantings.prop);
+const o3 = new THREE.Object3D(), col = new THREE.Color();
+function dressTrees(){
+  forests.forEach(f => {
+    const S = SPECIES[f.sp], cols = S.cols[season], bare = season === 'winter' && S.bare ? S.bare : 1;
+    f.items.forEach(([x, z, s], i) => {
+      const y = H(x, z), r = S.r * s, tr = S.trunk * s;
+      o3.position.set(x, y + tr / 2, z); o3.rotation.set(0, 0, 0); o3.scale.set(r * .1 + .3, tr, r * .1 + .3); o3.updateMatrix(); f.trunk.setMatrixAt(i, o3.matrix);
+      const cone = S.geo.type === 'ConeGeometry';
+      o3.position.set(x, y + tr + (cone ? r * 1.2 : r * S.sy * .8 * bare), z); o3.rotation.set(0, f.seed[i] * 6, 0);
+      o3.scale.set(r * bare, r * S.sy * bare, r * bare); o3.updateMatrix(); f.canopy.setMatrixAt(i, o3.matrix);
+      col.set(cols[Math.floor(f.seed[i] * cols.length) % cols.length]);
+      if (season === 'winter' && cone) col.lerp(new THREE.Color('#ffffff'), .25);
+      f.canopy.setColorAt(i, col);
+    });
+    f.canopy.instanceMatrix.needsUpdate = f.trunk.instanceMatrix.needsUpdate = true; if (f.canopy.instanceColor) f.canopy.instanceColor.needsUpdate = true;
+    f.canopy.material.transparent = season === 'winter' && !!S.bare; f.canopy.material.opacity = season === 'winter' && S.bare ? .55 : 1;
+  });
+}
+dressTrees();
+
+/* ---------- lamps along the spine, lit at night ---------- */
+const lampHeads = new THREE.MeshStandardMaterial({ color: 0xfff1cf, emissive: 0xffd58a, emissiveIntensity: 0 });
+const lamps = [];
+spinePx.forEach(line => densify(toMs(line), 24).forEach((p, i) => { if (!i) return; const x = p[0] + (i % 2 ? 3 : -3), z = p[1], y = H(x, z);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.08, .1, 4, 5), new THREE.MeshStandardMaterial({ color: 0x3a3a36 })); pole.position.set(x, y + 2, z);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.45, 10, 8), lampHeads); head.position.set(x, y + 4.2, z); prop.add(pole, head); lamps.push(head); }));
+const glow = new THREE.PointLight(0xffc878, 0, 260, 1.6); { const [x, z] = toM(860, 430); glow.position.set(x, H(x, z) + 30, z); prop.add(glow); }
+
+/* ---------- people and cars ---------- */
+const walkersProp = spinePx.map(l => toMs(l)).concat([toMs([[590,190],[680,140],[752,128]]), toMs([[668,300],[758,300]]), toMs([[1090,300],[1250,280],[1420,250]])]);
+const walkersOld = [toMs(entryPx), LOOPm, toMs(swRoadPx)].concat(oldPathsPx.map(toMs));
+function pathLen(p){ let L = 0; for (let i = 1; i < p.length; i++) L += Math.hypot(p[i][0]-p[i-1][0], p[i][1]-p[i-1][1]); return L; }
+function at(p, d){ for (let i = 1; i < p.length; i++){ const l = Math.hypot(p[i][0]-p[i-1][0], p[i][1]-p[i-1][1]); if (d <= l){ const t = d / l; return [p[i-1][0] + (p[i][0]-p[i-1][0]) * t, p[i-1][1] + (p[i][1]-p[i-1][1]) * t]; } d -= l; } return p[p.length - 1]; }
+const NP = 140, people = new THREE.InstancedMesh(new THREE.CylinderGeometry(.3, .32, 1.7, 6), new THREE.MeshStandardMaterial({ roughness: .8 }), NP);
+people.castShadow = true; scene.add(people);
+const clothes = ['#2f4858','#7a2f2a','#e0b14a','#f1ede4','#3f6b4a','#5a4e7a','#c4552d','#1d2620'].map(c => new THREE.Color(c));
+const walkers = Array.from({ length: NP }, (_, i) => ({ path: 0, d: rnd() * 400, v: (.9 + rnd() * .6) * (rnd() < .5 ? 1 : -1), off: (rnd() - .5) * 3 }));
+walkers.forEach((w, i) => people.setColorAt(i, clothes[i % clothes.length]));
+function assignPaths(){ const set = proposed ? walkersProp : walkersOld; walkers.forEach((w, i) => { w.path = i % set.length; w.set = set; w.L = pathLen(set[w.path]); w.d = rnd() * w.L; }); }
+assignPaths();
+const NC = 46, cars = new THREE.InstancedMesh(new THREE.BoxGeometry(4.4, 1.6, 1.9), new THREE.MeshStandardMaterial({ roughness: .5, metalness: .2 }), NC);
+cars.castShadow = true; scene.add(cars);
+const carCols = ['#f1ede4','#c9ccd0','#2b2f36','#7a2f2a','#3c5a78','#d7c9a8'].map(c => new THREE.Color(c));
+const HWd = densify(HWm, 10), HWL = pathLen(HWd), LOOPL = pathLen(LOOPm);
+const carState = Array.from({ length: NC }, (_, i) => ({ loop: i < 8, d: rnd() * (i < 8 ? LOOPL : HWL), v: (i < 8 ? 6 : 13 + rnd() * 6) * (i % 2 ? 1 : -1) }));
+carState.forEach((c, i) => cars.setColorAt(i, carCols[i % carCols.length]));
+
+/* ---------- petals, leaves, snow ---------- */
+const NF = 3500, fpos = new Float32Array(NF * 3), fv = new Float32Array(NF);
+for (let i = 0; i < NF; i++){ fpos[i*3] = (rnd() - .5) * 1100; fpos[i*3+1] = rnd() * 160; fpos[i*3+2] = (rnd() - .5) * 800; fv[i] = .5 + rnd(); }
+const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(fpos, 3));
+const dot = document.createElement('canvas'); dot.width = dot.height = 32; { const d = dot.getContext('2d'), gr = d.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.6, 'rgba(255,255,255,.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); d.fillStyle = gr; d.fillRect(0, 0, 32, 32); }
+const fall = new THREE.Points(fg, new THREE.PointsMaterial({ size: .8, map: new THREE.CanvasTexture(dot), sizeAttenuation: true, transparent: true, opacity: .95, depthWrite: false })); scene.add(fall);
+const FALL = { spring: { c: '#f6d6df', s: .7, n: .35 }, summer: { c: '#ffffff', s: 0, n: 0 }, autumn: { c: '#d7782f', s: .8, n: .45 }, winter: { c: '#ffffff', s: .9, n: 1 } };
+
+/* ---------- light through the day ---------- */
+const sky = { night: new THREE.Color('#141c2a'), dawn: new THREE.Color('#e9c7a8'), day: new THREE.Color('#cfdde6'), snow: new THREE.Color('#dfe5ea') };
+let hour = 16.5;
+function light(){
+  const a = (hour - 6) / 13 * Math.PI, up = Math.sin(a), R = 1400;
+  sun.position.set(Math.cos(a) * R, Math.max(up, 0.02) * R * .85 + 40, Math.sin(Math.max(a, 0)) * R * .45 + 200);
+  const day = THREE.MathUtils.clamp(up * 3, 0, 1), warm = THREE.MathUtils.clamp(1 - up * 2.2, 0, 1) * day;
+  sun.intensity = 1.25 * day; sun.color.setHSL(.09, .6 * warm + .15, .92 - .12 * warm);
+  hemi.intensity = .07 + .63 * day; moon.intensity = .16 * (1 - day); hemi.color.set(day > .2 ? '#f2f0e6' : '#7d8db0');
+  const bg = sky.night.clone().lerp(season === 'winter' ? sky.snow : sky.day, day).lerp(sky.dawn, warm * .55);
+  scene.background = bg; scene.fog.color.copy(bg); renderer.toneMappingExposure = 1;
+  const night = 1 - day; lampHeads.emissiveIntensity = night > .3 ? 1.6 : 0; glow.intensity = proposed && night > .3 ? 1.4 : 0;
+  $('hourOut').textContent = `${String(Math.floor(hour)).padStart(2, '0')}:${String(Math.floor((hour % 1) * 60)).padStart(2, '0')}`;
+}
+light();
+
+/* ---------- season and view switches ---------- */
+function setSeason(s){
+  season = s; paint(); groundTex.needsUpdate = true; dressTrees();
+  roofMat.color.set(s === 'winter' ? '#f3f5f6' : '#5f8f80');
+  if (window.__roofs){ const r = window.__roofs; window.__roofCols.forEach((c, i) => r.setColorAt(i, s === 'winter' ? col.set('#f1f3f4') : c)); r.instanceColor.needsUpdate = true; }
+  const F = FALL[s]; fall.material.color.set(F.c); fall.material.size = F.s; fall.visible = F.s > 0; fall.userData.n = F.n;
+  waterMat.color.set(s === 'winter' ? '#d8e6ee' : '#ffffff');
+  document.querySelectorAll('#seasons button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === s)));
+  light(); try { localStorage.setItem('iust-season', s); } catch (e) {}
+}
+function setMode(p){
+  proposed = p; prop.visible = p; paint(); groundTex.needsUpdate = true; assignPaths(); light();
+  $('mProp').setAttribute('aria-pressed', String(p)); $('mExist').setAttribute('aria-pressed', String(!p));
+  labels.forEach(l => l.el.classList.toggle('dim', !p)); if (current) showCard(current);
+}
+$('seasons').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSeason(b.dataset.s); });
+$('mProp').addEventListener('click', () => setMode(true)); $('mExist').addEventListener('click', () => setMode(false));
+$('hour').addEventListener('input', e => { hour = +e.target.value; light(); });
+let live = false;
+$('live').addEventListener('click', () => { live = !live; $('live').setAttribute('aria-pressed', String(live)); $('live').querySelector('span').textContent = live ? 'Pause' : 'Day cycle'; });
+
+/* ---------- places: labels, list, card, camera ---------- */
+const labelsEl = $('labels'), labels = PLACES.map(p => {
+  const [x, z] = toM(p.px[0], p.px[1]); p.pos = new THREE.Vector3(x, H(x, z) + 14, z);
+  const el = document.createElement('button'); el.type = 'button'; el.className = 'lab' + (p.water ? ' w' : ''); el.innerHTML = `<b>${p.k}</b>${p.name}`;
+  el.addEventListener('click', () => go(p)); labelsEl.appendChild(el); return { p, el };
+});
+$('places').innerHTML = PLACES.map(p => `<li><button type="button" class="${p.water ? 'w' : ''}" data-id="${p.id}"><b>${p.k}</b>${p.name}</button></li>`).join('');
+$('places').addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(PLACES.find(p => p.id === b.dataset.id)); });
+let current = null;
+function showCard(p){
+  $('cK').textContent = `Place ${p.k}`; $('cT').textContent = p.name; $('cP').textContent = p.text;
+  $('cF').innerHTML = p.facts.map(f => `<span>${f}</span>`).join(''); $('cN').textContent = p.today;
+  $('card').classList.add('on');
+  document.querySelectorAll('#places button').forEach(b => b.setAttribute('aria-current', String(b.dataset.id === p.id)));
+}
+$('cX').addEventListener('click', () => { $('card').classList.remove('on'); current = null; stopTour(); document.querySelectorAll('#places button').forEach(b => b.removeAttribute('aria-current')); });
+let fly = null;
+function flyTo(pos, target, ms){ fly = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: target, start: performance.now(), ms: reduced ? 1 : ms }; }
+function go(p, fromTour){
+  if (!fromTour) stopTour(); current = p; showCard(p);
+  const t = p.pos.clone(); t.y -= 10;
+  const dir = camera.position.clone().sub(controls.target); dir.y = 0; dir.normalize();
+  const side = new THREE.Vector3(-.55, 0, .83).lerp(dir, .4).normalize();
+  const pos = t.clone().add(side.multiplyScalar(p.d * .95)).add(new THREE.Vector3(0, p.d * .62, 0));
+  flyTo(pos, t, 2200);
+  try { history.replaceState(null, '', '#' + p.id); } catch (e) {}
+}
+let tourT = null, tourI = 0;
+function stopTour(){ clearTimeout(tourT); tourT = null; $('tour').querySelector('span').textContent = 'Guided tour'; }
+function stepTour(){ go(PLACES[tourI % PLACES.length], true); tourI++; tourT = setTimeout(stepTour, 8000); }
+$('tour').addEventListener('click', () => { if (tourT) { stopTour(); return; } tourI = current ? PLACES.indexOf(current) + 1 : 0; $('tour').querySelector('span').textContent = 'Stop tour'; stepTour(); });
+
+// clicking the ground near a place opens it
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
+canvas.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; fly = null; if (tourT) stopTour(); });
+canvas.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return; down = null;
+  const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObject(ground)[0]; if (!hit) return;
+  let best = null, bd = 1e9; PLACES.forEach(p => { const d = Math.hypot(hit.point.x - p.pos.x, hit.point.z - p.pos.z); if (d < bd) { bd = d; best = p; } });
+  if (best && bd < Math.max(40, best.d * .35)) go(best);
+});
+
+/* ---------- loop ---------- */
+function resize(){ const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+const v = new THREE.Vector3(); let last = performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, (now - last) / 1000); last = now; U.time.value = now / 1000;
+  if (live){ hour += dt * .35; if (hour > 21) hour = 5; $('hour').value = hour; light(); }
+  if (fly){ const k = Math.min(1, (now - fly.start) / fly.ms), e = k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k + 2, 3) / 2;
+    camera.position.lerpVectors(fly.p0, fly.p1, e); controls.target.lerpVectors(fly.t0, fly.t1, e); if (k >= 1) fly = null; }
+  else if (!current && !reduced && !down) { const a = dt * .02, p = camera.position.clone().sub(controls.target); p.applyAxisAngle(new THREE.Vector3(0, 1, 0), a); camera.position.copy(controls.target).add(p); }
+  controls.update();
+  if (!reduced) flowTex.offset.y -= dt * .35;
+  // walkers and cars
+  const speedUp = 2.2;
+  walkers.forEach((w, i) => { const p = w.set[w.path]; w.d += w.v * dt * speedUp; if (w.d > w.L) w.d -= w.L; if (w.d < 0) w.d += w.L;
+    const q = at(p, w.d), x = q[0] + w.off, z = q[1] + w.off * .6; o3.position.set(x, H(x, z) + .85, z); o3.rotation.set(0, 0, 0); o3.scale.set(1, 1, 1); o3.updateMatrix(); people.setMatrixAt(i, o3.matrix); });
+  people.instanceMatrix.needsUpdate = true;
+  carState.forEach((c, i) => { const path = c.loop ? LOOPm : HWd, L = c.loop ? LOOPL : HWL; c.d = (c.d + c.v * dt + L) % L;
+    const q = at(path, c.d), q2 = at(path, (c.d + Math.sign(c.v) * 3 + L) % L), lane = c.loop ? 1.6 : 4.5 * Math.sign(c.v);
+    const ang = Math.atan2(q2[1] - q[1], q2[0] - q[0]), x = q[0] + Math.sin(ang) * lane, z = q[1] - Math.cos(ang) * lane;
+    o3.position.set(x, H(x, z) + .9, z); o3.rotation.set(0, -ang, 0); o3.scale.set(1, 1, 1); o3.updateMatrix(); cars.setMatrixAt(i, o3.matrix); });
+  cars.instanceMatrix.needsUpdate = true;
+  if (fall.visible){ const n = fall.userData.n || 0; for (let i = 0; i < NF; i++){ const k = i * 3;
+      fpos[k+1] -= fv[i] * dt * (season === 'winter' ? 9 : 4); fpos[k] += Math.sin(now / 900 + i) * dt * 2 * (1 - n * .5);
+      if (fpos[k+1] < H(fpos[k], fpos[k+2])) fpos[k+1] = 120 + rnd() * 50; }
+    fg.attributes.position.needsUpdate = true; }
+  renderer.render(scene, camera);
+  // labels
+  const W2 = innerWidth / 2, H2 = innerHeight / 2;
+  labels.forEach(l => { v.copy(l.p.pos).project(camera); const off = v.z > 1;
+    l.el.classList.toggle('hide', off); if (!off) l.el.style.transform = `translate(${v.x * W2 + W2}px,${-v.y * H2 + H2}px) translate(-50%,-100%)`; });
+  $('needle').style.transform = `rotate(${Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) * 180 / Math.PI}deg)`;
+}
+let saved = null; try { saved = localStorage.getItem('iust-season'); } catch (e) {}
+setSeason(GROUND[saved] ? saved : 'autumn');
+requestAnimationFrame(frame);
+requestAnimationFrame(() => setTimeout(() => $('load').classList.add('done'), 300));
+setTimeout(() => { $('hint').style.opacity = 0; }, 7000);
+const start = PLACES.find(p => '#' + p.id === location.hash); if (start) setTimeout(() => go(start), 600);
+})();
+</script>
