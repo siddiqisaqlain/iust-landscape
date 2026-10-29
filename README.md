@@ -22,4 +22,12 @@ Building footprints come from the campus outlines; storeys are estimated from ea
 
 Imagery: Esri, Maxar, Earthstar Geographics · Terrain: Mapzen / AWS Terrain Tiles
 
+## Visitor count
+The top-right panel shows how many people are on the page now and the total page views, using Supabase (Realtime presence and a `count_visit` database function). Nothing is stored on the visitor's device. Each view is also written to an anonymous visit log (time, referring site, browser, OS, device type, screen size, language, time zone; no IP address), kept for 12 months. Visitors can send private feedback from the same panel. Read both in Supabase under Table Editor (`visit_log`, `feedback`). `site-data/visitors.sql` sets up the database.
+
+## Terms, license and privacy
+See [legal.html](legal.html). This is an independent design project, not affiliated with or endorsed by IUST.
+
 Author: Saqlain Siddiqi
+
+© 2026 Saqlain Siddiqi. All rights reserved. See [LICENSE](LICENSE).

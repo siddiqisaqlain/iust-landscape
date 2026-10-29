@@ -83,7 +83,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .load p{font-family:var(--f-display);font-size:22px;color:var(--ink2)}
 .credit{position:fixed;z-index:4;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0;font-size:10.5px;color:var(--ink2);max-width:30ch;line-height:1.4;padding:6px 10px;border-radius:10px;background:var(--panel);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 @media (max-width:1300px){.credit{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
-/* author, visitors and chat (top right; steps aside while a place card is open) */
+/* author and visitors (top right; steps aside while a place card is open) */
 .social{position:fixed;z-index:5;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));width:300px;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:opacity .35s,visibility .35s}
 .card.on ~ .social{opacity:0;visibility:hidden}
 .social .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -94,29 +94,24 @@ button{font:inherit;color:inherit;cursor:pointer}
 .vline i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--leaf);animation:pulse 2.4s infinite}
 .vline .sep{color:var(--ink3)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--leaf) 55%,transparent)}70%,100%{box-shadow:0 0 0 7px transparent}}
-.chat-t{position:relative;flex:none}
-.chat-t[hidden]{display:none}
-.chat-t b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--chinar);color:#fff;font-size:10px;line-height:17px;text-align:center}
-.chat-t b[hidden]{display:none}
-.chat{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--rule);padding-top:10px}
-.chat[hidden]{display:none}
-.msgs{list-style:none;margin:0;padding:0 2px 0 0;display:flex;flex-direction:column;gap:9px;max-height:min(300px,40vh);overflow:auto;overscroll-behavior:contain}
-.msgs li{font-size:13.5px;line-height:1.45}
-.msgs .meta{display:flex;align-items:baseline;gap:6px}
-.msgs .meta b{font-weight:600;font-size:12.5px;color:var(--ink)}
-.msgs .meta time{font-size:11px;color:var(--ink3)}
-.msgs p{margin:1px 0 0;color:var(--ink2);overflow-wrap:anywhere;white-space:pre-wrap}
-.msgs .empty{color:var(--ink3);font-size:13px}
-.chat form{display:flex;flex-direction:column;gap:6px}
-.chat input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--fill);border:1px solid transparent;border-radius:10px;padding:8px 10px;min-width:0}
-.chat input:focus{outline:none;border-color:var(--chinar)}
-.chat .row{display:flex;gap:6px}
-.chat .row input{flex:1}
-.chat .send{flex:none;width:36px;border:0;border-radius:10px;background:var(--ink);color:var(--stage);display:grid;place-items:center}
-.chat .send:disabled{opacity:.5;cursor:default}
-.chat .send svg{width:14px;height:14px}
-.chat-err{margin:0;font-size:12px;color:var(--chinar)}
-.chat-err[hidden]{display:none}
+.social .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.fb-t{flex:none}
+.fb{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--rule);padding-top:10px}
+.fb[hidden]{display:none}
+.fb textarea,.fb input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--fill);border:1px solid transparent;border-radius:10px;padding:8px 10px;min-width:0;resize:vertical}
+.fb textarea{min-height:76px;max-height:40vh}
+.fb textarea:focus,.fb input:focus{outline:none;border-color:var(--chinar)}
+.fb .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.fb .note{margin:0;font-size:11.5px;line-height:1.45;color:var(--ink3)}
+.fb .note a{color:var(--ink2);text-underline-offset:2px}
+.fb .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fb .msg{margin:0;font-size:12.5px;color:var(--ink2)}
+.fb .msg.err{color:var(--chinar)}
+.fb button:disabled{opacity:.5;cursor:default}
+.fb-done{margin:0;font-size:13.5px;color:var(--ink2);border-top:1px solid var(--rule);padding-top:10px}
+.fb-done[hidden]{display:none}
+.social .legal{margin:0;font-size:11px;line-height:1.45;color:var(--ink3);border-top:1px solid var(--rule);padding-top:8px}
+.social .legal a{color:var(--ink2);text-underline-offset:2px}
 @media (prefers-reduced-motion:reduce){.vline i{animation:none}.social{transition:none}}
 .compass{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
 .compass svg{width:26px;height:26px}
@@ -158,23 +153,21 @@ button{font:inherit;color:inherit;cursor:pointer}
   <p class="now" id="cN"></p>
 </aside>
 
-<section class="social glass" aria-label="Author, visitors and chat">
+<section class="social glass" aria-label="Author and visitors">
   <div class="top">
     <div><small>Plan and design</small><strong>Saqlain Siddiqi</strong></div>
-    <button class="ibtn ghost chat-t" type="button" id="chatT" aria-expanded="false" aria-controls="chat" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg><span>Chat</span><b id="chatN" hidden></b></button>
+    <button class="ibtn ghost fb-t" type="button" id="fbT" aria-expanded="false" aria-controls="fb"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg><span>Feedback</span></button>
   </div>
   <p class="vline" id="vLine" hidden><i aria-hidden="true"></i><span id="vNow"></span><span class="sep" id="vSep" hidden>·</span><span id="vAll"></span></p>
-  <div class="chat" id="chat" hidden>
-    <ol class="msgs" id="msgs" aria-live="polite"><li class="empty">Loading messages…</li></ol>
-    <form id="chatF">
-      <input id="chatName" name="name" placeholder="Your name" maxlength="40" required autocomplete="nickname" aria-label="Your name">
-      <div class="row">
-        <input id="chatMsg" name="message" placeholder="Say something about the plan…" maxlength="500" required autocomplete="off" aria-label="Message">
-        <button class="send" type="submit" id="chatS" aria-label="Send"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5l12 5.5-12 5.5 2-5.5z"/></svg></button>
-      </div>
-      <p class="chat-err" id="chatErr" role="alert" hidden></p>
-    </form>
-  </div>
+  <form class="fb" id="fb" hidden novalidate>
+    <textarea id="fbMsg" name="message" maxlength="2000" required placeholder="What do you think of the plan? Ideas, corrections, questions…" aria-label="Your feedback"></textarea>
+    <input id="fbEmail" name="email" type="email" maxlength="254" autocomplete="email" placeholder="Email, only if you want a reply (optional)" aria-label="Email (optional)">
+    <input class="hp" id="fbHp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="note">Sent privately to Saqlain; never published. If you add your email, it is used only to reply. If you are under 18, please leave it blank. <a href="legal.html#privacy">Privacy</a></p>
+    <div class="row"><p class="msg" id="fbErr" role="alert"></p><button class="ibtn" type="submit" id="fbS">Send</button></div>
+  </form>
+  <p class="fb-done" id="fbDone" role="status" hidden>Thank you. Your feedback has been sent.</p>
+  <p class="legal">Independent design project, not affiliated with or endorsed by IUST. © 2026 Saqlain Siddiqi · <a href="legal.html">Terms, license &amp; privacy</a></p>
 </section>
 
 <div class="bar glass" role="group" aria-label="Season and time">
@@ -195,56 +188,45 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-// Visitors and chat: people here now (Supabase Realtime presence), total visits (count_visit), and a shared chat (chat_messages). Each part stays hidden if it cannot load.
+// Visitors and feedback: people here now (Supabase Realtime presence), total page views (count_visit), an anonymous visit log (visit_log) and a private feedback form (feedback table). Nothing is stored on the visitor's device; hidden if it cannot load.
 (function(){
 'use strict';
 const SUPABASE_URL = 'https://wllzcxvwurpartbimyle.supabase.co', SUPABASE_KEY = 'sb_publishable_grUMltwmRtBDoRgW-Dxvcw_jjdWrJbW', PAGE = 'iust-landscape';
 if (!SUPABASE_URL || !SUPABASE_KEY || !window.supabase) return;
 const $ = id => document.getElementById(id), fmt = n => n.toLocaleString('en-IN');
-const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-let me = store('iust-visitor'); if (!me) { me = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)); store('iust-visitor', me); }
-let fresh = true; try { fresh = !sessionStorage.getItem('iust-counted'); sessionStorage.setItem('iust-counted', '1'); } catch (e) {}
-
-// visitors
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const me = Math.random().toString(36).slice(2) + Date.now().toString(36);
 const show = () => { $('vLine').hidden = false; $('vSep').hidden = !($('vNow').textContent && $('vAll').textContent); };
 const room = db.channel('online:' + PAGE, { config: { presence: { key: me } } });
 room.on('presence', { event: 'sync' }, () => { const n = Object.keys(room.presenceState()).length; $('vNow').textContent = n + ' here now'; show(); })
-  .subscribe(status => { if (status === 'SUBSCRIBED') room.track({ since: Date.now() }); });
-db.rpc('count_visit', { page: PAGE, bump: fresh }).then(({ data, error }) => { if (error || data == null) return; $('vAll').textContent = fmt(data) + (data === 1 ? ' visit' : ' visits'); show(); });
+  .subscribe(status => { if (status === 'SUBSCRIBED') room.track({}); });
+db.rpc('count_visit', { page: PAGE, bump: true }).then(({ data, error }) => { if (error || data == null) return; $('vAll').textContent = fmt(data) + (data === 1 ? ' view' : ' views'); show(); });
 
-// chat
-const seen = new Set(), list = $('msgs');
-let open = false, unread = 0;
-const ago = t => { const s = (Date.now() - new Date(t)) / 1000;
-  return s < 60 ? 'now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); };
-const add = (m, mine) => { if (!m || seen.has(m.id)) return; seen.add(m.id);
-  const empty = list.querySelector('.empty'); if (empty) empty.remove();
-  const atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
-  const li = document.createElement('li'), meta = document.createElement('div'), who = document.createElement('b'), when = document.createElement('time'), body = document.createElement('p');
-  meta.className = 'meta'; who.textContent = m.name; when.dateTime = m.created_at; when.textContent = ago(m.created_at); body.textContent = m.body;
-  meta.append(who, when); li.append(meta, body); list.append(li);
-  while (list.children.length > 100) list.firstElementChild.remove();
-  if (atEnd || mine) list.scrollTop = list.scrollHeight;
-  if (!open && !mine) { unread++; $('chatN').textContent = unread > 9 ? '9+' : unread; $('chatN').hidden = false; } };
-const setEmpty = t => { list.innerHTML = ''; const li = document.createElement('li'); li.className = 'empty'; li.textContent = t; list.append(li); };
-db.from('chat_messages').select('id,name,body,created_at').eq('page', PAGE).order('id', { ascending: false }).limit(50)
-  .then(({ data, error }) => { if (error) return; $('chatT').hidden = false;
-    if (!data.length) setEmpty('No messages yet. Say hello.'); else data.reverse().forEach(m => add(m, true)); unread = 0; });
-db.channel('chat:' + PAGE).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: 'page=eq.' + PAGE }, p => add(p.new)).subscribe();
-setInterval(() => list.querySelectorAll('time').forEach(t => { t.textContent = ago(t.dateTime); }), 60000);
-$('chatT').addEventListener('click', () => { open = !open; $('chat').hidden = !open; $('chatT').setAttribute('aria-expanded', open);
-  if (open) { unread = 0; $('chatN').hidden = true; list.scrollTop = list.scrollHeight; ($('chatName').value ? $('chatMsg') : $('chatName')).focus(); } });
-$('chatName').value = store('iust-chat-name') || '';
-$('chatF').addEventListener('submit', async e => { e.preventDefault();
-  const name = $('chatName').value.trim(), text = $('chatMsg').value.trim(); if (!name || !text) return;
-  store('iust-chat-name', name); $('chatS').disabled = true; $('chatErr').hidden = true;
-  const { data, error } = await db.from('chat_messages').insert({ page: PAGE, name, body: text }).select('id,name,body,created_at').single();
-  if (error) { $('chatErr').textContent = /busy/i.test(error.message) ? 'Chat is busy, try again in a minute.' : 'Could not send. Try again.'; $('chatErr').hidden = false; }
-  else { $('chatMsg').value = ''; add(data, true); }
-  setTimeout(() => { $('chatS').disabled = false; }, 1500); });
-// keep typing in the chat from steering the model
-['keydown', 'keyup'].forEach(t => $('chat').addEventListener(t, e => e.stopPropagation()));
+// visit log: coarse, anonymous details only (no IP address, no identifier)
+const ua = navigator.userAgent;
+const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Other';
+const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS X|Macintosh/.test(ua) ? 'macOS' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : 'Other';
+const touch = matchMedia('(pointer: coarse)').matches, short = Math.min(screen.width, screen.height);
+const device = touch ? (short < 600 ? 'Phone' : 'Tablet') : 'Desktop';
+let referrer = null; try { const r = new URL(document.referrer); if (r.host !== location.host) referrer = r.host.slice(0, 200); } catch (e) {}
+let tz = null; try { tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').slice(0, 60) || null; } catch (e) {}
+db.from('visit_log').insert({ page: PAGE, referrer, browser, os, device, screen: (screen.width + 'x' + screen.height).slice(0, 20), lang: (navigator.language || '').slice(0, 20) || null, tz }).then(() => {});
+
+// feedback: write-only table, read by the author in Supabase
+const fbOpen = open => { $('fb').hidden = !open; $('fbT').setAttribute('aria-expanded', open); if (open) { $('fbDone').hidden = true; $('fbMsg').focus(); } };
+$('fbT').addEventListener('click', () => fbOpen($('fb').hidden));
+['keydown', 'keyup'].forEach(t => $('fb').addEventListener(t, e => e.stopPropagation()));
+$('fb').addEventListener('submit', async e => { e.preventDefault();
+  const message = $('fbMsg').value.trim(), email = $('fbEmail').value.trim(), err = $('fbErr');
+  err.className = 'msg err';
+  if (!message) { err.textContent = 'Please write a message.'; return; }
+  if (email && !$('fbEmail').checkValidity()) { err.textContent = 'That email does not look right.'; return; }
+  if ($('fbHp').value) return;
+  $('fbS').disabled = true; err.className = 'msg'; err.textContent = 'Sending…';
+  const { error } = await db.from('feedback').insert({ page: PAGE, message, email: email || null });
+  $('fbS').disabled = false;
+  if (error) { err.className = 'msg err'; err.textContent = /too many/i.test(error.message) ? 'Too many messages right now. Try again in a minute.' : 'Could not send. Please try again.'; return; }
+  err.textContent = ''; $('fbMsg').value = ''; $('fbEmail').value = ''; fbOpen(false); $('fbDone').hidden = false; });
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
