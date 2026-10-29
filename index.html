@@ -83,6 +83,41 @@ button{font:inherit;color:inherit;cursor:pointer}
 .load p{font-family:var(--f-display);font-size:22px;color:var(--ink2)}
 .credit{position:fixed;z-index:4;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0;font-size:10.5px;color:var(--ink2);max-width:30ch;line-height:1.4;padding:6px 10px;border-radius:10px;background:var(--panel);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 @media (max-width:1300px){.credit{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+/* author, visitors and chat (top right; steps aside while a place card is open) */
+.social{position:fixed;z-index:5;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));width:300px;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:opacity .35s,visibility .35s}
+.card.on ~ .social{opacity:0;visibility:hidden}
+.social .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.social small{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.social strong{display:block;font-family:var(--f-display);font-weight:500;font-size:20px;line-height:1.15;margin-top:2px}
+.vline{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums}
+.vline[hidden]{display:none}
+.vline i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--leaf);animation:pulse 2.4s infinite}
+.vline .sep{color:var(--ink3)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--leaf) 55%,transparent)}70%,100%{box-shadow:0 0 0 7px transparent}}
+.chat-t{position:relative;flex:none}
+.chat-t[hidden]{display:none}
+.chat-t b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--chinar);color:#fff;font-size:10px;line-height:17px;text-align:center}
+.chat-t b[hidden]{display:none}
+.chat{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--rule);padding-top:10px}
+.chat[hidden]{display:none}
+.msgs{list-style:none;margin:0;padding:0 2px 0 0;display:flex;flex-direction:column;gap:9px;max-height:min(300px,40vh);overflow:auto;overscroll-behavior:contain}
+.msgs li{font-size:13.5px;line-height:1.45}
+.msgs .meta{display:flex;align-items:baseline;gap:6px}
+.msgs .meta b{font-weight:600;font-size:12.5px;color:var(--ink)}
+.msgs .meta time{font-size:11px;color:var(--ink3)}
+.msgs p{margin:1px 0 0;color:var(--ink2);overflow-wrap:anywhere;white-space:pre-wrap}
+.msgs .empty{color:var(--ink3);font-size:13px}
+.chat form{display:flex;flex-direction:column;gap:6px}
+.chat input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--fill);border:1px solid transparent;border-radius:10px;padding:8px 10px;min-width:0}
+.chat input:focus{outline:none;border-color:var(--chinar)}
+.chat .row{display:flex;gap:6px}
+.chat .row input{flex:1}
+.chat .send{flex:none;width:36px;border:0;border-radius:10px;background:var(--ink);color:var(--stage);display:grid;place-items:center}
+.chat .send:disabled{opacity:.5;cursor:default}
+.chat .send svg{width:14px;height:14px}
+.chat-err{margin:0;font-size:12px;color:var(--chinar)}
+.chat-err[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.vline i{animation:none}.social{transition:none}}
 .compass{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
 .compass svg{width:26px;height:26px}
 
@@ -97,6 +132,8 @@ button{font:inherit;color:inherit;cursor:pointer}
   .card{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;transform:translateY(calc(100% + 200px))}
   .card.on{transform:none}
   .hint,.compass{display:none}
+  .social{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));width:auto;max-width:calc(100% - 32px);padding:10px 12px;gap:8px}
+  .social strong{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){.card,.load{transition:none}}
 </style>
@@ -121,6 +158,25 @@ button{font:inherit;color:inherit;cursor:pointer}
   <p class="now" id="cN"></p>
 </aside>
 
+<section class="social glass" aria-label="Author, visitors and chat">
+  <div class="top">
+    <div><small>Plan and design</small><strong>Saqlain Siddiqi</strong></div>
+    <button class="ibtn ghost chat-t" type="button" id="chatT" aria-expanded="false" aria-controls="chat" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg><span>Chat</span><b id="chatN" hidden></b></button>
+  </div>
+  <p class="vline" id="vLine" hidden><i aria-hidden="true"></i><span id="vNow"></span><span class="sep" id="vSep" hidden>·</span><span id="vAll"></span></p>
+  <div class="chat" id="chat" hidden>
+    <ol class="msgs" id="msgs" aria-live="polite"><li class="empty">Loading messages…</li></ol>
+    <form id="chatF">
+      <input id="chatName" name="name" placeholder="Your name" maxlength="40" required autocomplete="nickname" aria-label="Your name">
+      <div class="row">
+        <input id="chatMsg" name="message" placeholder="Say something about the plan…" maxlength="500" required autocomplete="off" aria-label="Message">
+        <button class="send" type="submit" id="chatS" aria-label="Send"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5l12 5.5-12 5.5 2-5.5z"/></svg></button>
+      </div>
+      <p class="chat-err" id="chatErr" role="alert" hidden></p>
+    </form>
+  </div>
+</section>
+
 <div class="bar glass" role="group" aria-label="Season and time">
   <div class="seg" id="seasons" role="group" aria-label="Season">
     <button type="button" data-s="spring" aria-pressed="false">Spring</button>
@@ -137,6 +193,60 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="load" id="load"><p id="loadMsg">Laying out the campus…</p></div>
 <p class="credit" id="credit">Plan and design: Saqlain Siddiqi</p>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// Visitors and chat: people here now (Supabase Realtime presence), total visits (count_visit), and a shared chat (chat_messages). Each part stays hidden if it cannot load.
+(function(){
+'use strict';
+const SUPABASE_URL = 'https://wllzcxvwurpartbimyle.supabase.co', SUPABASE_KEY = 'sb_publishable_grUMltwmRtBDoRgW-Dxvcw_jjdWrJbW', PAGE = 'iust-landscape';
+if (!SUPABASE_URL || !SUPABASE_KEY || !window.supabase) return;
+const $ = id => document.getElementById(id), fmt = n => n.toLocaleString('en-IN');
+const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+let me = store('iust-visitor'); if (!me) { me = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)); store('iust-visitor', me); }
+let fresh = true; try { fresh = !sessionStorage.getItem('iust-counted'); sessionStorage.setItem('iust-counted', '1'); } catch (e) {}
+
+// visitors
+const show = () => { $('vLine').hidden = false; $('vSep').hidden = !($('vNow').textContent && $('vAll').textContent); };
+const room = db.channel('online:' + PAGE, { config: { presence: { key: me } } });
+room.on('presence', { event: 'sync' }, () => { const n = Object.keys(room.presenceState()).length; $('vNow').textContent = n + ' here now'; show(); })
+  .subscribe(status => { if (status === 'SUBSCRIBED') room.track({ since: Date.now() }); });
+db.rpc('count_visit', { page: PAGE, bump: fresh }).then(({ data, error }) => { if (error || data == null) return; $('vAll').textContent = fmt(data) + (data === 1 ? ' visit' : ' visits'); show(); });
+
+// chat
+const seen = new Set(), list = $('msgs');
+let open = false, unread = 0;
+const ago = t => { const s = (Date.now() - new Date(t)) / 1000;
+  return s < 60 ? 'now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); };
+const add = (m, mine) => { if (!m || seen.has(m.id)) return; seen.add(m.id);
+  const empty = list.querySelector('.empty'); if (empty) empty.remove();
+  const atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  const li = document.createElement('li'), meta = document.createElement('div'), who = document.createElement('b'), when = document.createElement('time'), body = document.createElement('p');
+  meta.className = 'meta'; who.textContent = m.name; when.dateTime = m.created_at; when.textContent = ago(m.created_at); body.textContent = m.body;
+  meta.append(who, when); li.append(meta, body); list.append(li);
+  while (list.children.length > 100) list.firstElementChild.remove();
+  if (atEnd || mine) list.scrollTop = list.scrollHeight;
+  if (!open && !mine) { unread++; $('chatN').textContent = unread > 9 ? '9+' : unread; $('chatN').hidden = false; } };
+const setEmpty = t => { list.innerHTML = ''; const li = document.createElement('li'); li.className = 'empty'; li.textContent = t; list.append(li); };
+db.from('chat_messages').select('id,name,body,created_at').eq('page', PAGE).order('id', { ascending: false }).limit(50)
+  .then(({ data, error }) => { if (error) return; $('chatT').hidden = false;
+    if (!data.length) setEmpty('No messages yet. Say hello.'); else data.reverse().forEach(m => add(m, true)); unread = 0; });
+db.channel('chat:' + PAGE).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: 'page=eq.' + PAGE }, p => add(p.new)).subscribe();
+setInterval(() => list.querySelectorAll('time').forEach(t => { t.textContent = ago(t.dateTime); }), 60000);
+$('chatT').addEventListener('click', () => { open = !open; $('chat').hidden = !open; $('chatT').setAttribute('aria-expanded', open);
+  if (open) { unread = 0; $('chatN').hidden = true; list.scrollTop = list.scrollHeight; ($('chatName').value ? $('chatMsg') : $('chatName')).focus(); } });
+$('chatName').value = store('iust-chat-name') || '';
+$('chatF').addEventListener('submit', async e => { e.preventDefault();
+  const name = $('chatName').value.trim(), text = $('chatMsg').value.trim(); if (!name || !text) return;
+  store('iust-chat-name', name); $('chatS').disabled = true; $('chatErr').hidden = true;
+  const { data, error } = await db.from('chat_messages').insert({ page: PAGE, name, body: text }).select('id,name,body,created_at').single();
+  if (error) { $('chatErr').textContent = /busy/i.test(error.message) ? 'Chat is busy, try again in a minute.' : 'Could not send. Try again.'; $('chatErr').hidden = false; }
+  else { $('chatMsg').value = ''; add(data, true); }
+  setTimeout(() => { $('chatS').disabled = false; }, 1500); });
+// keep typing in the chat from steering the model
+['keydown', 'keyup'].forEach(t => $('chat').addEventListener(t, e => e.stopPropagation()));
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
